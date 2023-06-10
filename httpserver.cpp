@@ -17,7 +17,6 @@ HttpServer::HttpServer(QObject* parent)
         db.close();
     }
 
-    // Создаем новое подключение
     db = QSqlDatabase::addDatabase("QPSQL");
     db.setHostName("127.0.0.1");
     db.setPort(2461);
@@ -26,7 +25,6 @@ HttpServer::HttpServer(QObject* parent)
     db.setPassword("1p2a3s4s");
 
     if (!db.open()) {
-        // Если не удалось открыть подключение к базе данных
         QJsonObject errorResponse;
         errorResponse["error"] = "Failed to connect to the database.";
         QJsonDocument jsonResponse(errorResponse);
@@ -69,13 +67,11 @@ void HttpServer::incomingConnection(qintptr socketDescriptor) {
 }
 
 void HttpServer::processRequest(QTcpSocket* socket, const QByteArray& requestData) {
-    // Парсинг запроса
     QString requestString = QString::fromUtf8(requestData);
     QStringList requestLines = requestString.split('\n');
     QString requestMethod = requestLines.first().split(' ').first();
     QString requestUrl = requestLines.first().split(' ').at(1);
 
-    // Обработка запроса /api/v1/get_sum
     if (requestMethod == "GET" && requestUrl.startsWith("/api/v1/get_sum")) {
         QUrl url(requestUrl);
         QUrlQuery query(url.query());
@@ -83,7 +79,6 @@ void HttpServer::processRequest(QTcpSocket* socket, const QByteArray& requestDat
         int b = query.queryItemValue("b").toInt();
         int sum = a + b;
 
-        // Формирование ответа в формате JSON
         QJsonObject response;
         response["a"] = a;
         response["b"] = b;
@@ -92,7 +87,6 @@ void HttpServer::processRequest(QTcpSocket* socket, const QByteArray& requestDat
         QJsonDocument jsonResponse(response);
         QByteArray responseData = jsonResponse.toJson();
 
-        // Отправка ответа
         socket->write("HTTP/1.1 200 OK\r\n");
         socket->write("Content-Type: application/json\r\n");
         socket->write("Content-Length: " + QByteArray::number(responseData.size()) + "\r\n");
@@ -104,7 +98,6 @@ void HttpServer::processRequest(QTcpSocket* socket, const QByteArray& requestDat
         QUrlQuery query(url.query());
         QString name = query.queryItemValue("name");
 
-        // Получение списка менеджеров из базы данных по имени
         QSqlQuery dbQuery;
         QString queryString = "SELECT * FROM managers WHERE name = ?";
         dbQuery.prepare(queryString);
@@ -119,11 +112,9 @@ void HttpServer::processRequest(QTcpSocket* socket, const QByteArray& requestDat
                 managersArray.append(manager);
             }
 
-            // Формирование ответа в формате JSON
             QJsonDocument jsonResponse(managersArray);
             QByteArray responseData = jsonResponse.toJson();
 
-            // Отправка ответа
             socket->write("HTTP/1.1 200 OK\r\n");
             socket->write("Content-Type: application/json\r\n");
             socket->write("Content-Length: " + QByteArray::number(responseData.size()) + "\r\n");
@@ -131,7 +122,6 @@ void HttpServer::processRequest(QTcpSocket* socket, const QByteArray& requestDat
             socket->write(responseData);
         }
         else {
-            // Если произошла ошибка при выполнении запроса к базе данных
             QJsonObject errorResponse;
             errorResponse["error"] = "Failed to retrieve managers from the database.";
             QJsonDocument jsonResponse(errorResponse);
